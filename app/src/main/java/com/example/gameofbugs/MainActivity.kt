@@ -3,7 +3,10 @@ package com.example.gameofbugs
 import android.app.DatePickerDialog
 import android.os.Bundle
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ImageView
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
@@ -14,11 +17,10 @@ import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
+
     private var day = 0
     private var month = 0
     private var year = 0
-    private var zodiacName = "—"
-    private var zodiacResId = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,7 +28,16 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.registration_form)
 
 
+        val etLastName = findViewById<EditText>(R.id.etLastName)
+        val etFirstName = findViewById<EditText>(R.id.etFirstName)
+        val etMiddleName = findViewById<EditText>(R.id.etMiddleName)
+        val rgGender = findViewById<RadioGroup>(R.id.rgGender)
+        val rbMale = findViewById<RadioButton>(R.id.rbMale)
+        val rbFemale = findViewById<RadioButton>(R.id.rbFemale)
+
+
         val spCourse = findViewById<Spinner>(R.id.spCourse)
+
 
         val sbDifficulty = findViewById<SeekBar>(R.id.sbDifficulty)
         val tvDifficultyValue = findViewById<TextView>(R.id.tvDifficultyValue)
@@ -34,17 +45,17 @@ class MainActivity : AppCompatActivity() {
         sbDifficulty.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 tvDifficultyValue.text = progress.toString()
-                setGameDifficulty(progress)
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) { }
             override fun onStopTrackingTouch(seekBar: SeekBar?) { }
         })
 
+
         val btnBirthDate = findViewById<Button>(R.id.btnBirthDate)
         val tvBirthDate = findViewById<TextView>(R.id.tvBirthDate)
-        val ivZodiac = findViewById<ImageView>(R.id.ivZodiac)
-        val tvZodiac = findViewById<TextView>(R.id.tvZodiac)
+
         val btnShowResult = findViewById<Button>(R.id.btnShowResult)
+        val ivZodiac = findViewById<ImageView>(R.id.ivZodiac)
         val tvResult = findViewById<TextView>(R.id.tvResult)
 
         btnBirthDate.setOnClickListener {
@@ -53,22 +64,14 @@ class MainActivity : AppCompatActivity() {
                 this,
                 { _, selectedYear, selectedMonth, selectedDay ->
                     year = selectedYear
-                    month = selectedMonth + 1 // месяцы 0..11
+                    month = selectedMonth + 1
                     day = selectedDay
 
-                    val dateText = String.format(
+                    tvBirthDate.text = String.format(
                         Locale.getDefault(),
                         "%02d.%02d.%04d", day, month, year
                     )
-                    tvBirthDate.text = dateText
 
-                    zodiacName = getZodiacSign(day, month)
-                    zodiacResId = getZodiacImageRes(zodiacName)
-
-                    tvZodiac.text = "Знак зодиака: $zodiacName"
-                    if (zodiacResId != 0) {
-                        ivZodiac.setImageResource(zodiacResId)
-                    }
                 },
                 calendar.get(Calendar.YEAR),
                 calendar.get(Calendar.MONTH),
@@ -77,30 +80,64 @@ class MainActivity : AppCompatActivity() {
             dialog.show()
         }
 
+
         btnShowResult.setOnClickListener {
+            val lastName = etLastName.text.toString().trim()
+            val firstName = etFirstName.text.toString().trim()
+            val middleName = etMiddleName.text.toString().trim()
+
+            if (lastName.isEmpty() || firstName.isEmpty()) {
+                tvResult.text = "Введите фамилию и имя!"
+                return@setOnClickListener
+            }
             if (day == 0) {
-                tvResult.text = "Сначала выберите дату рождения!"
+                tvResult.text = "Выберите дату рождения!"
                 return@setOnClickListener
             }
 
-            val player = Player(
-                birthDate = String.format(
-                    Locale.getDefault(),
-                    "%02d.%02d.%04d", day, month, year
-                ),
-                zodiac = zodiacName
+            val gender = when (rgGender.checkedRadioButtonId) {
+                R.id.rbFemale -> "Женский"
+                else -> "Мужской"
+            }
+
+            val birthDate = String.format(
+                Locale.getDefault(),
+                "%02d.%02d.%04d", day, month, year
             )
 
+            val zodiac = getZodiacSign(day, month)
+            val zodiacRes = getZodiacImageRes(zodiac)
+
+            val player = Player(
+                firstName = firstName,
+                lastName = lastName,
+                middleName = middleName,
+                gender = gender,
+                birthDate = birthDate,
+                zodiac = zodiac,
+                course = spCourse.selectedItem.toString(),
+                difficulty = sbDifficulty.progress
+            )
+
+            if (zodiacRes != 0) {
+                ivZodiac.setImageResource(zodiacRes)
+                ivZodiac.visibility = ImageView.VISIBLE
+            } else {
+                ivZodiac.visibility = ImageView.GONE
+            }
+
+
             tvResult.text = """
+                Фамилия: ${player.lastName}
+                Имя: ${player.firstName}
+                Отчество: ${player.middleName.ifEmpty { "—" }}
+                Пол: ${player.gender}
                 Дата рождения: ${player.birthDate}
                 Знак зодиака: ${player.zodiac}
-                Курс: ${spCourse.selectedItem}
-                Сложность: ${sbDifficulty.progress}
+                Курс: ${player.course}
+                Сложность: ${player.difficulty}
             """.trimIndent()
         }
-    }
-
-    private fun setGameDifficulty(level: Int) {
     }
 
     private fun getZodiacSign(day: Int, month: Int): String {
@@ -119,6 +156,7 @@ class MainActivity : AppCompatActivity() {
             else -> "Рыбы"
         }
     }
+
 
     private fun getZodiacImageRes(zodiac: String): Int {
         return when (zodiac) {
