@@ -12,7 +12,6 @@ import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.tabs.TabLayout
 import java.util.Calendar
@@ -26,7 +25,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-//        enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
         setupTabs()
@@ -34,65 +32,63 @@ class MainActivity : AppCompatActivity() {
         setupRules()
         setupAuthors()
         setupSettings()
+        setupGame()
     }
 
     private fun setupTabs() {
         val tabLayout = findViewById<TabLayout>(R.id.tabLayout)
 
-        val registrationTab = findViewById<View>(R.id.registrationTab)
-        val rulesTab = findViewById<View>(R.id.rulesTab)
-        val authorsTab = findViewById<View>(R.id.authorsTab)
-        val settingsTab = findViewById<View>(R.id.settingsTab)
-
-        tabLayout.addTab(
-            tabLayout.newTab().setText("Регистрация")
-        )
-
-        tabLayout.addTab(
-            tabLayout.newTab().setText("Правила")
-        )
-
-        tabLayout.addTab(
-            tabLayout.newTab().setText("Авторы")
-        )
-
-        tabLayout.addTab(
-            tabLayout.newTab().setText("Настройки")
-        )
-
         val tabs = listOf(
-            registrationTab,
-            rulesTab,
-            authorsTab,
-            settingsTab
+            findViewById<View>(R.id.gameTab),
+            findViewById<View>(R.id.registrationTab),
+            findViewById<View>(R.id.rulesTab),
+            findViewById<View>(R.id.authorsTab),
+            findViewById<View>(R.id.settingsTab)
         )
+
+        listOf(
+            "Игра",
+            "Регистрация",
+            "Правила",
+            "Авторы",
+            "Настройки"
+        ).forEach { title ->
+            tabLayout.addTab(
+                tabLayout.newTab().setText(title)
+            )
+        }
 
         fun showTab(position: Int) {
             tabs.forEachIndexed { index, view ->
-                view.visibility = if (index == position) {
-                    View.VISIBLE
-                } else {
-                    View.GONE
-                }
+                view.visibility =
+                    if (index == position) {
+                        View.VISIBLE
+                    } else {
+                        View.GONE
+                    }
             }
         }
 
         tabLayout.addOnTabSelectedListener(
             object : TabLayout.OnTabSelectedListener {
 
-                override fun onTabSelected(tab: TabLayout.Tab) {
+                override fun onTabSelected(
+                    tab: TabLayout.Tab
+                ) {
                     showTab(tab.position)
                 }
 
-                override fun onTabUnselected(tab: TabLayout.Tab) {
-                }
+                override fun onTabUnselected(
+                    tab: TabLayout.Tab
+                ) = Unit
 
-                override fun onTabReselected(tab: TabLayout.Tab) {
-                }
+                override fun onTabReselected(
+                    tab: TabLayout.Tab
+                ) = Unit
             }
         )
 
-        showTab(0)
+        showTab(TAB_GAME)
     }
 
     private fun setupRegistration() {
@@ -389,6 +385,60 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupGame() {
+        val gameView =
+            findViewById<GameView>(R.id.gameView)
+
+        val tvScore =
+            findViewById<TextView>(R.id.tvGameScore)
+
+        val tvMisses =
+            findViewById<TextView>(R.id.tvGameMisses)
+
+        val tvTime =
+            findViewById<TextView>(R.id.tvGameTime)
+
+        val btnStart =
+            findViewById<Button>(R.id.btnStartGame)
+
+        gameView.onStateChanged = { state ->
+
+            tvScore.text =
+                "Очки: ${state.score}"
+
+            tvMisses.text =
+                "Промахи: ${state.misses}"
+
+            tvTime.text =
+                if (state.paused) {
+                    "Пауза: ${state.remainingSeconds} сек."
+                } else {
+                    "Время: ${state.remainingSeconds} сек."
+                }
+
+            btnStart.isEnabled =
+                !state.running
+
+            btnStart.text =
+                when {
+                    state.running ->
+                        "Игра идёт..."
+
+                    state.paused ->
+                        "Продолжить"
+
+                    else ->
+                        "Начать игру"
+                }
+        }
+
+        btnStart.setOnClickListener {
+            gameView.startGame(
+                GameSettings()
+            )
+        }
+    }
+
     private fun simpleListener(
         onProgress: (Int) -> Unit
     ) = object : SeekBar.OnSeekBarChangeListener {
@@ -513,5 +563,12 @@ class MainActivity : AppCompatActivity() {
             else ->
                 0
         }
+
+    }
+    companion object {
+        const val TAB_GAME = 0
+        const val TAB_RULES = 2
+        const val TAB_AUTHORS = 3
+        const val TAB_SETTINGS = 4
     }
 }

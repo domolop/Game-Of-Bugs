@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -10,7 +9,7 @@
         android:id="@+id/tabLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:tabMode="fixed" />
+        app:tabMode="scrollable" />
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -18,9 +17,22 @@
         android:layout_weight="1">
 
         <FrameLayout
-            android:id="@+id/registrationTab"
+            android:id="@+id/gameTab"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
+
+            <include
+                layout="@layout/tab_game"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/registrationTab"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
 
             <include
                 layout="@layout/registration_form"
@@ -35,10 +47,18 @@
             android:layout_height="match_parent"
             android:visibility="gone">
 
-            <include
-                layout="@layout/tab_rules"
+            <ScrollView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent">
+
+                <TextView
+                    android:id="@+id/tvRules"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp"
+                    android:textSize="16sp" />
+
+            </ScrollView>
 
         </FrameLayout>
 
