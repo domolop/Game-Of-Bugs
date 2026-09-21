@@ -35,18 +35,10 @@
             android:layout_height="match_parent"
             android:visibility="gone">
 
-            <ScrollView
+            <include
+                layout="@layout/tab_rules"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
-
-                <TextView
-                    android:id="@+id/tvRules"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="16dp"
-                    android:textSize="16sp" />
-
-            </ScrollView>
+                android:layout_height="match_parent" />
 
         </FrameLayout>
 
@@ -54,13 +46,27 @@
             android:id="@+id/authorsTab"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="gone" />
+            android:visibility="gone">
+
+            <include
+                layout="@layout/tab_authors"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </FrameLayout>
 
         <FrameLayout
             android:id="@+id/settingsTab"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="gone" />
+            android:visibility="gone">
+
+            <include
+                layout="@layout/tab_settings"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </FrameLayout>
 
     </FrameLayout>
 
