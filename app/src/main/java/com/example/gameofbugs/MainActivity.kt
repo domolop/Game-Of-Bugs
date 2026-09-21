@@ -16,7 +16,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.tabs.TabLayout
 import java.util.Calendar
 import java.util.Locale
-
+import android.view.Menu
+import android.widget.PopupMenu
 class MainActivity : AppCompatActivity() {
 
     private var day = 0
@@ -33,6 +34,52 @@ class MainActivity : AppCompatActivity() {
         setupAuthors()
         setupSettings()
         setupGame()
+        setupGameMenu()
+    }
+
+    private fun setupGameMenu() {
+        val btnGameMenu =
+            findViewById<Button>(R.id.btnGameMenu)
+
+        btnGameMenu.setOnClickListener { anchor ->
+
+            val popup =
+                PopupMenu(this, anchor)
+
+            popup.menu.add(
+                Menu.NONE,
+                TAB_RULES,
+                Menu.NONE,
+                "Правила"
+            )
+
+            popup.menu.add(
+                Menu.NONE,
+                TAB_AUTHORS,
+                Menu.NONE,
+                "Авторы"
+            )
+
+            popup.menu.add(
+                Menu.NONE,
+                TAB_SETTINGS,
+                Menu.NONE,
+                "Настройки"
+            )
+
+            popup.setOnMenuItemClickListener { item ->
+                selectTab(item.itemId)
+                true
+            }
+
+            popup.show()
+        }
+    }
+
+    private fun selectTab(position: Int) {
+        findViewById<TabLayout>(
+            R.id.tabLayout
+        ).getTabAt(position)?.select()
     }
 
     private fun setupTabs() {
@@ -258,99 +305,101 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupSettings() {
+        val preferences =
+            GamePreferences(this)
 
-        val preferences = getSharedPreferences(
-            "game_settings",
-            MODE_PRIVATE
-        )
+        val current =
+            preferences.load()
 
-        val sbGameSpeed = findViewById<SeekBar>(
-            R.id.sbGameSpeed
-        )
+        val sbGameSpeed =
+            findViewById<SeekBar>(
+                R.id.sbGameSpeed
+            )
 
-        val sbMaxBugs = findViewById<SeekBar>(
-            R.id.sbMaxBugs
-        )
+        val sbMaxBugs =
+            findViewById<SeekBar>(
+                R.id.sbMaxBugs
+            )
 
-        val sbBonusInterval = findViewById<SeekBar>(
-            R.id.sbBonusInterval
-        )
+        val sbBonusInterval =
+            findViewById<SeekBar>(
+                R.id.sbBonusInterval
+            )
 
-        val sbRoundDuration = findViewById<SeekBar>(
-            R.id.sbRoundDuration
-        )
+        val sbRoundDuration =
+            findViewById<SeekBar>(
+                R.id.sbRoundDuration
+            )
 
-        val tvGameSpeedValue = findViewById<TextView>(
-            R.id.tvGameSpeedValue
-        )
+        val tvGameSpeedValue =
+            findViewById<TextView>(
+                R.id.tvGameSpeedValue
+            )
 
-        val tvMaxBugsValue = findViewById<TextView>(
-            R.id.tvMaxBugsValue
-        )
+        val tvMaxBugsValue =
+            findViewById<TextView>(
+                R.id.tvMaxBugsValue
+            )
 
-        val tvBonusIntervalValue = findViewById<TextView>(
-            R.id.tvBonusIntervalValue
-        )
+        val tvBonusIntervalValue =
+            findViewById<TextView>(
+                R.id.tvBonusIntervalValue
+            )
 
-        val tvRoundDurationValue = findViewById<TextView>(
-            R.id.tvRoundDurationValue
-        )
+        val tvRoundDurationValue =
+            findViewById<TextView>(
+                R.id.tvRoundDurationValue
+            )
 
-        val speed = preferences.getInt(
-            "game_speed",
-            5
-        )
+        sbGameSpeed.progress =
+            current.gameSpeed - 1
 
-        val maxBugs = preferences.getInt(
-            "max_bugs",
-            10
-        )
+        sbMaxBugs.progress =
+            current.maxBugs - 1
 
-        val bonusInterval = preferences.getInt(
-            "bonus_interval",
-            15
-        )
+        sbBonusInterval.progress =
+            current.bonusIntervalSeconds - 5
 
-        val roundDuration = preferences.getInt(
-            "round_duration",
-            60
-        )
+        sbRoundDuration.progress =
+            current.roundDurationSeconds - 30
 
-        sbGameSpeed.progress = speed - 1
-        sbMaxBugs.progress = maxBugs - 1
-        sbBonusInterval.progress = bonusInterval - 5
-        sbRoundDuration.progress = roundDuration - 30
+        tvGameSpeedValue.text =
+            current.gameSpeed.toString()
 
-        tvGameSpeedValue.text = speed.toString()
-        tvMaxBugsValue.text = maxBugs.toString()
-        tvBonusIntervalValue.text = "$bonusInterval сек."
-        tvRoundDurationValue.text = "$roundDuration сек."
+        tvMaxBugsValue.text =
+            current.maxBugs.toString()
+
+        tvBonusIntervalValue.text =
+            "${current.bonusIntervalSeconds} сек."
+
+        tvRoundDurationValue.text =
+            "${current.roundDurationSeconds} сек."
 
         sbGameSpeed.setOnSeekBarChangeListener(
-            simpleListener { progress ->
+            simpleListener {
                 tvGameSpeedValue.text =
-                    (progress + 1).toString()
+                    (it + 1).toString()
             }
         )
 
         sbMaxBugs.setOnSeekBarChangeListener(
-            simpleListener { progress ->
+            simpleListener {
                 tvMaxBugsValue.text =
-                    (progress + 1).toString()
+                    (it + 1).toString()
             }
         )
 
         sbBonusInterval.setOnSeekBarChangeListener(
-            simpleListener { progress ->
+            simpleListener {
                 tvBonusIntervalValue.text =
-                    "${progress + 5} сек."
+                    "${it + 5} сек."
             }
         )
 
         sbRoundDuration.setOnSeekBarChangeListener(
-            simpleListener { progress ->
+            simpleListener {
                 tvRoundDurationValue.text =
-                    "${progress + 30} сек."
+                    "${it + 30} сек."
             }
         )
 
@@ -358,24 +407,21 @@ class MainActivity : AppCompatActivity() {
             R.id.btnSaveSettings
         ).setOnClickListener {
 
-            preferences.edit()
-                .putInt(
-                    "game_speed",
-                    sbGameSpeed.progress + 1
+            preferences.save(
+                GameSettings(
+                    gameSpeed =
+                        sbGameSpeed.progress + 1,
+
+                    maxBugs =
+                        sbMaxBugs.progress + 1,
+
+                    bonusIntervalSeconds =
+                        sbBonusInterval.progress + 5,
+
+                    roundDurationSeconds =
+                        sbRoundDuration.progress + 30
                 )
-                .putInt(
-                    "max_bugs",
-                    sbMaxBugs.progress + 1
-                )
-                .putInt(
-                    "bonus_interval",
-                    sbBonusInterval.progress + 5
-                )
-                .putInt(
-                    "round_duration",
-                    sbRoundDuration.progress + 30
-                )
-                .apply()
+            )
 
             Toast.makeText(
                 this,
@@ -434,7 +480,7 @@ class MainActivity : AppCompatActivity() {
 
         btnStart.setOnClickListener {
             gameView.startGame(
-                GameSettings()
+                GamePreferences(this).load()
             )
         }
     }
