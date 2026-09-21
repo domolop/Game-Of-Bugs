@@ -11,6 +11,7 @@ import android.widget.RadioGroup
 import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.tabs.TabLayout
@@ -23,35 +24,58 @@ class MainActivity : AppCompatActivity() {
     private var month = 0
     private var year = 0
 
-    private lateinit var tabLayout: TabLayout
-
-    private lateinit var registrationTab: View
-    private lateinit var rulesTab: View
-    private lateinit var authorsTab: View
-    private lateinit var settingsTab: View
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
-        tabLayout = findViewById(R.id.tabLayout)
-
-        registrationTab = findViewById(R.id.registrationTab)
-        rulesTab = findViewById(R.id.rulesTab)
-        authorsTab = findViewById(R.id.authorsTab)
-        settingsTab = findViewById(R.id.settingsTab)
-
         setupTabs()
         setupRegistration()
         setupRules()
+        setupAuthors()
+        setupSettings()
     }
 
     private fun setupTabs() {
-        tabLayout.addTab(tabLayout.newTab().setText("Регистрация"))
-        tabLayout.addTab(tabLayout.newTab().setText("Правила"))
-        tabLayout.addTab(tabLayout.newTab().setText("Авторы"))
-        tabLayout.addTab(tabLayout.newTab().setText("Настройки"))
+        val tabLayout = findViewById<TabLayout>(R.id.tabLayout)
+
+        val registrationTab = findViewById<View>(R.id.registrationTab)
+        val rulesTab = findViewById<View>(R.id.rulesTab)
+        val authorsTab = findViewById<View>(R.id.authorsTab)
+        val settingsTab = findViewById<View>(R.id.settingsTab)
+
+        tabLayout.addTab(
+            tabLayout.newTab().setText("Регистрация")
+        )
+
+        tabLayout.addTab(
+            tabLayout.newTab().setText("Правила")
+        )
+
+        tabLayout.addTab(
+            tabLayout.newTab().setText("Авторы")
+        )
+
+        tabLayout.addTab(
+            tabLayout.newTab().setText("Настройки")
+        )
+
+        val tabs = listOf(
+            registrationTab,
+            rulesTab,
+            authorsTab,
+            settingsTab
+        )
+
+        fun showTab(position: Int) {
+            tabs.forEachIndexed { index, view ->
+                view.visibility = if (index == position) {
+                    View.VISIBLE
+                } else {
+                    View.GONE
+                }
+            }
+        }
 
         tabLayout.addOnTabSelectedListener(
             object : TabLayout.OnTabSelectedListener {
@@ -69,20 +93,6 @@ class MainActivity : AppCompatActivity() {
         )
 
         showTab(0)
-    }
-
-    private fun showTab(position: Int) {
-        registrationTab.visibility = View.GONE
-        rulesTab.visibility = View.GONE
-        authorsTab.visibility = View.GONE
-        settingsTab.visibility = View.GONE
-
-        when (position) {
-            0 -> registrationTab.visibility = View.VISIBLE
-            1 -> rulesTab.visibility = View.VISIBLE
-            2 -> authorsTab.visibility = View.VISIBLE
-            3 -> settingsTab.visibility = View.VISIBLE
-        }
     }
 
     private fun setupRegistration() {
@@ -120,10 +130,6 @@ class MainActivity : AppCompatActivity() {
         val btnBirthDate = findViewById<Button>(R.id.btnBirthDate)
         val tvBirthDate = findViewById<TextView>(R.id.tvBirthDate)
 
-        val btnShowResult = findViewById<Button>(R.id.btnShowResult)
-        val ivZodiac = findViewById<ImageView>(R.id.ivZodiac)
-        val tvResult = findViewById<TextView>(R.id.tvResult)
-
         btnBirthDate.setOnClickListener {
 
             val calendar = Calendar.getInstance()
@@ -151,6 +157,10 @@ class MainActivity : AppCompatActivity() {
 
             dialog.show()
         }
+
+        val btnShowResult = findViewById<Button>(R.id.btnShowResult)
+        val ivZodiac = findViewById<ImageView>(R.id.ivZodiac)
+        val tvResult = findViewById<TextView>(R.id.tvResult)
 
         btnShowResult.setOnClickListener {
 
@@ -230,38 +240,278 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private fun getZodiacSign(day: Int, month: Int): String {
-        return when {
-            (month == 3 && day >= 21) || (month == 4 && day <= 19) -> "Овен"
-            (month == 4 && day >= 20) || (month == 5 && day <= 20) -> "Телец"
-            (month == 5 && day >= 21) || (month == 6 && day <= 20) -> "Близнецы"
-            (month == 6 && day >= 21) || (month == 7 && day <= 22) -> "Рак"
-            (month == 7 && day >= 23) || (month == 8 && day <= 22) -> "Лев"
-            (month == 8 && day >= 23) || (month == 9 && day <= 22) -> "Дева"
-            (month == 9 && day >= 23) || (month == 10 && day <= 22) -> "Весы"
-            (month == 10 && day >= 23) || (month == 11 && day <= 21) -> "Скорпион"
-            (month == 11 && day >= 22) || (month == 12 && day <= 21) -> "Стрелец"
-            (month == 12 && day >= 22) || (month == 1 && day <= 19) -> "Козерог"
-            (month == 1 && day >= 20) || (month == 2 && day <= 18) -> "Водолей"
-            else -> "Рыбы"
+    private fun setupAuthors() {
+
+        val lvAuthors = findViewById<android.widget.ListView>(R.id.lvAuthors)
+
+        val authors = listOf(
+            Author(
+                "Скуртяин Д.Е.",
+                R.mipmap.ic_launcher
+            ),
+            Author(
+                "Кумов Д.В.",
+                R.mipmap.ic_launcher
+            )
+        )
+
+        lvAuthors.adapter = AuthorAdapter(
+            this,
+            authors
+        )
+    }
+
+    private fun setupSettings() {
+
+        val preferences = getSharedPreferences(
+            "game_settings",
+            MODE_PRIVATE
+        )
+
+        val sbGameSpeed = findViewById<SeekBar>(
+            R.id.sbGameSpeed
+        )
+
+        val sbMaxBugs = findViewById<SeekBar>(
+            R.id.sbMaxBugs
+        )
+
+        val sbBonusInterval = findViewById<SeekBar>(
+            R.id.sbBonusInterval
+        )
+
+        val sbRoundDuration = findViewById<SeekBar>(
+            R.id.sbRoundDuration
+        )
+
+        val tvGameSpeedValue = findViewById<TextView>(
+            R.id.tvGameSpeedValue
+        )
+
+        val tvMaxBugsValue = findViewById<TextView>(
+            R.id.tvMaxBugsValue
+        )
+
+        val tvBonusIntervalValue = findViewById<TextView>(
+            R.id.tvBonusIntervalValue
+        )
+
+        val tvRoundDurationValue = findViewById<TextView>(
+            R.id.tvRoundDurationValue
+        )
+
+        val speed = preferences.getInt(
+            "game_speed",
+            5
+        )
+
+        val maxBugs = preferences.getInt(
+            "max_bugs",
+            10
+        )
+
+        val bonusInterval = preferences.getInt(
+            "bonus_interval",
+            15
+        )
+
+        val roundDuration = preferences.getInt(
+            "round_duration",
+            60
+        )
+
+        sbGameSpeed.progress = speed - 1
+        sbMaxBugs.progress = maxBugs - 1
+        sbBonusInterval.progress = bonusInterval - 5
+        sbRoundDuration.progress = roundDuration - 30
+
+        tvGameSpeedValue.text = speed.toString()
+        tvMaxBugsValue.text = maxBugs.toString()
+        tvBonusIntervalValue.text = "$bonusInterval сек."
+        tvRoundDurationValue.text = "$roundDuration сек."
+
+        sbGameSpeed.setOnSeekBarChangeListener(
+            simpleListener { progress ->
+                tvGameSpeedValue.text =
+                    (progress + 1).toString()
+            }
+        )
+
+        sbMaxBugs.setOnSeekBarChangeListener(
+            simpleListener { progress ->
+                tvMaxBugsValue.text =
+                    (progress + 1).toString()
+            }
+        )
+
+        sbBonusInterval.setOnSeekBarChangeListener(
+            simpleListener { progress ->
+                tvBonusIntervalValue.text =
+                    "${progress + 5} сек."
+            }
+        )
+
+        sbRoundDuration.setOnSeekBarChangeListener(
+            simpleListener { progress ->
+                tvRoundDurationValue.text =
+                    "${progress + 30} сек."
+            }
+        )
+
+        findViewById<Button>(
+            R.id.btnSaveSettings
+        ).setOnClickListener {
+
+            preferences.edit()
+                .putInt(
+                    "game_speed",
+                    sbGameSpeed.progress + 1
+                )
+                .putInt(
+                    "max_bugs",
+                    sbMaxBugs.progress + 1
+                )
+                .putInt(
+                    "bonus_interval",
+                    sbBonusInterval.progress + 5
+                )
+                .putInt(
+                    "round_duration",
+                    sbRoundDuration.progress + 30
+                )
+                .apply()
+
+            Toast.makeText(
+                this,
+                "Настройки сохранены",
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
-    private fun getZodiacImageRes(zodiac: String): Int {
+    private fun simpleListener(
+        onProgress: (Int) -> Unit
+    ) = object : SeekBar.OnSeekBarChangeListener {
+
+        override fun onProgressChanged(
+            seekBar: SeekBar?,
+            progress: Int,
+            fromUser: Boolean
+        ) {
+            onProgress(progress)
+        }
+
+        override fun onStartTrackingTouch(
+            seekBar: SeekBar?
+        ) {
+        }
+
+        override fun onStopTrackingTouch(
+            seekBar: SeekBar?
+        ) {
+        }
+    }
+
+    private fun getZodiacSign(
+        day: Int,
+        month: Int
+    ): String {
+
+        return when {
+
+            (month == 3 && day >= 21) ||
+                    (month == 4 && day <= 19) ->
+                "Овен"
+
+            (month == 4 && day >= 20) ||
+                    (month == 5 && day <= 20) ->
+                "Телец"
+
+            (month == 5 && day >= 21) ||
+                    (month == 6 && day <= 20) ->
+                "Близнецы"
+
+            (month == 6 && day >= 21) ||
+                    (month == 7 && day <= 22) ->
+                "Рак"
+
+            (month == 7 && day >= 23) ||
+                    (month == 8 && day <= 22) ->
+                "Лев"
+
+            (month == 8 && day >= 23) ||
+                    (month == 9 && day <= 22) ->
+                "Дева"
+
+            (month == 9 && day >= 23) ||
+                    (month == 10 && day <= 22) ->
+                "Весы"
+
+            (month == 10 && day >= 23) ||
+                    (month == 11 && day <= 21) ->
+                "Скорпион"
+
+            (month == 11 && day >= 22) ||
+                    (month == 12 && day <= 21) ->
+                "Стрелец"
+
+            (month == 12 && day >= 22) ||
+                    (month == 1 && day <= 19) ->
+                "Козерог"
+
+            (month == 1 && day >= 20) ||
+                    (month == 2 && day <= 18) ->
+                "Водолей"
+
+            else ->
+                "Рыбы"
+        }
+    }
+
+    private fun getZodiacImageRes(
+        zodiac: String
+    ): Int {
+
         return when (zodiac) {
-            "Овен" -> R.drawable.zodiac_aries
-            "Телец" -> R.drawable.zodiac_taurus
-            "Близнецы" -> R.drawable.zodiac_gemini
-            "Рак" -> R.drawable.zodiac_cancer
-            "Лев" -> R.drawable.zodiac_leo
-            "Дева" -> R.drawable.zodiac_virgo
-            "Весы" -> R.drawable.zodiac_libra
-            "Скорпион" -> R.drawable.zodiac_scorpio
-            "Стрелец" -> R.drawable.zodiac_sagittarius
-            "Козерог" -> R.drawable.zodiac_capricorn
-            "Водолей" -> R.drawable.zodiac_aquarius
-            "Рыбы" -> R.drawable.zodiac_pisces
-            else -> 0
+
+            "Овен" ->
+                R.drawable.zodiac_aries
+
+            "Телец" ->
+                R.drawable.zodiac_taurus
+
+            "Близнецы" ->
+                R.drawable.zodiac_gemini
+
+            "Рак" ->
+                R.drawable.zodiac_cancer
+
+            "Лев" ->
+                R.drawable.zodiac_leo
+
+            "Дева" ->
+                R.drawable.zodiac_virgo
+
+            "Весы" ->
+                R.drawable.zodiac_libra
+
+            "Скорпион" ->
+                R.drawable.zodiac_scorpio
+
+            "Стрелец" ->
+                R.drawable.zodiac_sagittarius
+
+            "Козерог" ->
+                R.drawable.zodiac_capricorn
+
+            "Водолей" ->
+                R.drawable.zodiac_aquarius
+
+            "Рыбы" ->
+                R.drawable.zodiac_pisces
+
+            else ->
+                0
         }
     }
 }
