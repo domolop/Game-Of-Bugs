@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+//        enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
         setupTabs()
@@ -247,11 +247,11 @@ class MainActivity : AppCompatActivity() {
         val authors = listOf(
             Author(
                 "Скуртяин Д.Е.",
-                R.mipmap.ic_launcher
+                R.drawable.author_skuryatin
             ),
             Author(
                 "Кумов Д.В.",
-                R.mipmap.ic_launcher
+                R.drawable.author_kumov
             )
         )
 
