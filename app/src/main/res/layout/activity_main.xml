@@ -11,83 +11,10 @@
         android:layout_height="wrap_content"
         app:tabMode="scrollable" />
 
-    <FrameLayout
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/viewPager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
-
-        <FrameLayout
-            android:id="@+id/gameTab"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <include
-                layout="@layout/tab_game"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-
-        </FrameLayout>
-
-        <FrameLayout
-            android:id="@+id/registrationTab"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="gone">
-
-            <include
-                layout="@layout/registration_form"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-
-        </FrameLayout>
-
-        <FrameLayout
-            android:id="@+id/rulesTab"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="gone">
-
-            <ScrollView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
-
-                <TextView
-                    android:id="@+id/tvRules"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="16dp"
-                    android:textSize="16sp" />
-
-            </ScrollView>
-
-        </FrameLayout>
-
-        <FrameLayout
-            android:id="@+id/authorsTab"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="gone">
-
-            <include
-                layout="@layout/tab_authors"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-
-        </FrameLayout>
-
-        <FrameLayout
-            android:id="@+id/settingsTab"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="gone">
-
-            <include
-                layout="@layout/tab_settings"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-
-        </FrameLayout>
-
-    </FrameLayout>
+        android:layout_weight="1" />
 
 </LinearLayout>
