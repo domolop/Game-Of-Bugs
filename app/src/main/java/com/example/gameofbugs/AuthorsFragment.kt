@@ -1,9 +1,9 @@
 package com.example.gameofbugs
 
-import android.os.Bundle
 import android.view.View
 import android.widget.ListView
 import androidx.fragment.app.Fragment
+import android.os.Bundle
 
 class AuthorsFragment : Fragment(R.layout.tab_authors) {
 

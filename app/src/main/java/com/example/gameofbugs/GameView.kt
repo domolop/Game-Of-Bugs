@@ -75,6 +75,7 @@ class GameView @JvmOverloads constructor(
     }
 
     var onStateChanged: ((GameState) -> Unit)? = null
+    var onRoundFinished: ((GameResult) -> Unit)? = null
 
     private var settings = GameSettings().sanitized()
 
@@ -629,6 +630,13 @@ class GameView @JvmOverloads constructor(
         pausedRemainingMs = 0L
 
         handler.removeCallbacks(frameRunnable)
+
+        onRoundFinished?.invoke(
+            GameResult(
+                score = score,
+                misses = misses
+            )
+        )
 
         bugs.clear()
 

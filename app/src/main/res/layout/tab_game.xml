@@ -30,6 +30,15 @@
             android:text="Меню" />
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/tvCurrentUser"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
+        android:text="Игрок: не выбран"
+        android:textStyle="italic" />
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"

@@ -1,6 +1,6 @@
 package com.example.gameofbugs
 
-import android.os.Bundle
+import android.os.Bundle // <-- ДОБАВЬТЕ ЭТОТ ИМПОРТ
 import android.text.Html
 import android.view.View
 import android.widget.TextView
