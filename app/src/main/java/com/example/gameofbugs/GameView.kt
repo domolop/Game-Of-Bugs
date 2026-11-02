@@ -5,6 +5,11 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.media.MediaPlayer
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -15,6 +20,7 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.hypot
 import kotlin.math.sin
 import kotlin.random.Random
 
@@ -43,7 +49,8 @@ private data class GameBug(
     var y: Float,
     var vx: Float,
     var vy: Float,
-    val radius: Float
+    val radius: Float,
+    val speed: Float
 )
 
 class GameView @JvmOverloads constructor(
@@ -95,6 +102,41 @@ class GameView @JvmOverloads constructor(
     private var viewVisible = true
     private var windowVisible = true
 
+    private val sensorManager =
+        context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    private val accelerometer =
+        sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    private var sensorOn = false
+    private var player: MediaPlayer? = null
+
+    private var tiltX = 0f
+    private var tiltY = 0f
+    private var tiltLeft = 0f
+
+    private var bonusVisible = false
+    private var bonusX = 0f
+    private var bonusY = 0f
+    private var bonusLeft = 0f
+    private var bonusTimer = 0f
+
+    private val bonusRadius = dp(24f)
+
+    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.DKGRAY
+        textAlign = Paint.Align.CENTER
+        textSize = dp(16f)
+    }
+
+    private val sensorListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) {
+            tiltX = -event.values[0]
+            tiltY = event.values[1]
+        }
+
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+        }
+    }
+
     private val frameRunnable = object : Runnable {
         override fun run() {
             if (!running) {
@@ -123,6 +165,7 @@ class GameView @JvmOverloads constructor(
                 spawnBug()
             }
 
+            updateBonus(dt)
             updateBugs(dt)
             reportStateIfNeeded(now)
 
@@ -138,6 +181,8 @@ class GameView @JvmOverloads constructor(
 
         score = 0
         misses = 0
+
+        resetBonus()
 
         pausedRemainingMs = 0L
         roundEndAt =
@@ -173,6 +218,7 @@ class GameView @JvmOverloads constructor(
         lastFrameAt = 0L
 
         handler.removeCallbacks(frameRunnable)
+        unregisterSensor()
 
         reportState(force = true)
     }
@@ -196,6 +242,10 @@ class GameView @JvmOverloads constructor(
 
         running = true
 
+        if (tiltLeft > 0f) {
+            registerSensor()
+        }
+
         reportState(force = true)
 
         handler.post(frameRunnable)
@@ -212,6 +262,17 @@ class GameView @JvmOverloads constructor(
             event.actionMasked == MotionEvent.ACTION_UP &&
             running
         ) {
+            if (bonusVisible && isBonusHit(event.x, event.y)) {
+                bonusVisible = false
+                score += BONUS_POINTS
+                startTilt()
+
+                reportState(force = true)
+                invalidate()
+
+                return true
+            }
+
             val hitIndex = bugs.indexOfLast { bug ->
                 val dx = event.x - bug.x
                 val dy = event.y - bug.y
@@ -246,6 +307,19 @@ class GameView @JvmOverloads constructor(
         bugs.forEach { bug ->
             drawBug(canvas, bug)
         }
+
+        if (bonusVisible) {
+            drawBonus(canvas)
+        }
+
+        if (tiltLeft > 0f) {
+            canvas.drawText(
+                "Наклоняйте телефон! ${tiltLeft.toInt() + 1}",
+                width / 2f,
+                dp(28f),
+                textPaint
+            )
+        }
     }
 
     override fun onVisibilityChanged(
@@ -274,6 +348,8 @@ class GameView @JvmOverloads constructor(
 
     override fun onDetachedFromWindow() {
         stopRound(notify = false)
+        player?.release()
+        player = null
         super.onDetachedFromWindow()
     }
 
@@ -324,7 +400,8 @@ class GameView @JvmOverloads constructor(
                     (maxY - minY) + minY,
             vx = cos(angle).toFloat() * speed,
             vy = sin(angle).toFloat() * speed,
-            radius = radius
+            radius = radius,
+            speed = speed
         )
 
         lastSpawnAt =
@@ -336,32 +413,170 @@ class GameView @JvmOverloads constructor(
             return
         }
 
+        val tilt = tiltLeft > 0f
+        val bounce = if (tilt) TILT_BOUNCE else 1f
+
         bugs.forEach { bug ->
+            if (tilt) {
+                bug.vx += tiltX * dp(TILT_ACCEL_DP) * dt
+                bug.vy += tiltY * dp(TILT_ACCEL_DP) * dt
+                bug.vx *= 1f - TILT_FRICTION * dt
+                bug.vy *= 1f - TILT_FRICTION * dt
+            }
+
             bug.x += bug.vx * dt
             bug.y += bug.vy * dt
 
             if (bug.x - bug.radius < 0f) {
                 bug.x = bug.radius
-                bug.vx = abs(bug.vx)
+                bug.vx = abs(bug.vx) * bounce
             } else if (bug.x + bug.radius > width) {
                 bug.x =
                     (width - bug.radius)
                         .coerceAtLeast(bug.radius)
 
-                bug.vx = -abs(bug.vx)
+                bug.vx = -abs(bug.vx) * bounce
             }
 
             if (bug.y - bug.radius < 0f) {
                 bug.y = bug.radius
-                bug.vy = abs(bug.vy)
+                bug.vy = abs(bug.vy) * bounce
             } else if (bug.y + bug.radius > height) {
                 bug.y =
                     (height - bug.radius)
                         .coerceAtLeast(bug.radius)
 
-                bug.vy = -abs(bug.vy)
+                bug.vy = -abs(bug.vy) * bounce
             }
         }
+    }
+
+    private fun updateBonus(dt: Float) {
+        if (tiltLeft > 0f) {
+            tiltLeft -= dt
+
+            if (tiltLeft <= 0f) {
+                stopTilt()
+            }
+        } else if (bonusVisible) {
+            bonusLeft -= dt
+
+            if (bonusLeft <= 0f) {
+                bonusVisible = false
+                bonusTimer = 0f
+            }
+        } else {
+            bonusTimer += dt
+
+            if (bonusTimer >= settings.bonusIntervalSeconds) {
+                spawnBonus()
+            }
+        }
+    }
+
+    private fun spawnBonus() {
+        if (width <= 0 || height <= 0) {
+            return
+        }
+
+        bonusX = random.nextFloat() *
+                (width - 2 * bonusRadius).coerceAtLeast(1f) + bonusRadius
+        bonusY = random.nextFloat() *
+                (height - 2 * bonusRadius).coerceAtLeast(1f) + bonusRadius
+        bonusLeft = BONUS_LIFETIME_SECONDS
+        bonusVisible = true
+    }
+
+    private fun isBonusHit(x: Float, y: Float): Boolean {
+        val dx = x - bonusX
+        val dy = y - bonusY
+        val hitRadius = bonusRadius * HIT_RADIUS_FACTOR
+
+        return dx * dx + dy * dy <= hitRadius * hitRadius
+    }
+
+    private fun startTilt() {
+        tiltLeft = TILT_SECONDS
+        tiltX = 0f
+        tiltY = 0f
+
+        registerSensor()
+
+        player?.release()
+        player = MediaPlayer.create(context, R.raw.bug_scream)
+        player?.start()
+    }
+
+    private fun stopTilt() {
+        tiltLeft = 0f
+        bonusTimer = 0f
+
+        unregisterSensor()
+
+        bugs.forEach { bug ->
+            val length = hypot(bug.vx, bug.vy)
+            val angle = if (length < 1f) {
+                random.nextDouble(0.0, 2.0 * PI)
+            } else {
+                atan2(bug.vy.toDouble(), bug.vx.toDouble())
+            }
+
+            bug.vx = cos(angle).toFloat() * bug.speed
+            bug.vy = sin(angle).toFloat() * bug.speed
+        }
+    }
+
+    private fun resetBonus() {
+        bonusVisible = false
+        bonusTimer = 0f
+        tiltLeft = 0f
+        unregisterSensor()
+    }
+
+    private fun registerSensor() {
+        if (!sensorOn && accelerometer != null) {
+            sensorManager.registerListener(
+                sensorListener,
+                accelerometer,
+                SensorManager.SENSOR_DELAY_GAME
+            )
+            sensorOn = true
+        }
+    }
+
+    private fun unregisterSensor() {
+        if (sensorOn) {
+            sensorManager.unregisterListener(sensorListener)
+            sensorOn = false
+        }
+    }
+
+    private fun drawBonus(canvas: Canvas) {
+        fillPaint.color = Color.rgb(255, 200, 40)
+
+        canvas.drawCircle(
+            bonusX,
+            bonusY,
+            bonusRadius,
+            fillPaint
+        )
+
+        strokePaint.color = Color.rgb(230, 130, 0)
+        strokePaint.strokeWidth = 5f
+
+        canvas.drawCircle(
+            bonusX,
+            bonusY,
+            bonusRadius,
+            strokePaint
+        )
+
+        canvas.drawText(
+            "★",
+            bonusX,
+            bonusY + dp(6f),
+            textPaint
+        )
     }
 
     private fun drawBug(
@@ -630,6 +845,7 @@ class GameView @JvmOverloads constructor(
         pausedRemainingMs = 0L
 
         handler.removeCallbacks(frameRunnable)
+        resetBonus()
 
         onRoundFinished?.invoke(
             GameResult(
@@ -650,6 +866,7 @@ class GameView @JvmOverloads constructor(
         pausedRemainingMs = 0L
 
         handler.removeCallbacks(frameRunnable)
+        resetBonus()
 
         bugs.clear()
 
@@ -726,5 +943,11 @@ class GameView @JvmOverloads constructor(
         private const val SPAWN_INTERVAL_MS = 700L
         private const val MISS_PENALTY = 1
         private const val HIT_RADIUS_FACTOR = 1.35f
+        private const val BONUS_POINTS = 5
+        private const val BONUS_LIFETIME_SECONDS = 5f
+        private const val TILT_SECONDS = 10f
+        private const val TILT_ACCEL_DP = 90f
+        private const val TILT_FRICTION = 1.5f
+        private const val TILT_BOUNCE = 0.3f
     }
 }
