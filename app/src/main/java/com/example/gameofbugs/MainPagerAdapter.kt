@@ -14,6 +14,7 @@ class MainPagerAdapter(activity: FragmentActivity) : FragmentStateAdapter(activi
             Pages.REGISTRATION -> RegistrationFragment()
             Pages.RULES -> RulesFragment()
             Pages.AUTHORS -> AuthorsFragment()
+            Pages.RECORDS -> RecordsFragment()
             Pages.SETTINGS -> SettingsFragment()
             else -> GameFragment()
         }
