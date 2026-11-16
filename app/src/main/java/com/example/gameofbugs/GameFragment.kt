@@ -106,6 +106,9 @@ class GameFragment : Fragment(R.layout.tab_game) {
         super.onResume()
         gameView?.resumeGame()
         loadActiveUser()
+        GoldRepository.getInstance(requireContext()).loadRate { rate ->
+            gameView?.goldRate = rate
+        }
     }
 
     override fun onPause() {

@@ -40,11 +40,13 @@ private enum class BugType(
     COCKROACH(1, 44f, 1.0f),
     BEETLE(2, 42f, 0.85f),
     SPIDER(3, 38f, 1.15f),
-    BUTTERFLY(4, 46f, 1.3f)
+    BUTTERFLY(4, 46f, 1.3f),
+    GOLD(0, 46f, 1.2f)
 }
 
 private data class GameBug(
     val type: BugType,
+    val points: Int,
     var x: Float,
     var y: Float,
     var vx: Float,
@@ -83,6 +85,7 @@ class GameView @JvmOverloads constructor(
 
     var onStateChanged: ((GameState) -> Unit)? = null
     var onRoundFinished: ((GameResult) -> Unit)? = null
+    var goldRate: Double? = null
 
     private var settings = GameSettings().sanitized()
 
@@ -112,6 +115,8 @@ class GameView @JvmOverloads constructor(
     private var tiltX = 0f
     private var tiltY = 0f
     private var tiltLeft = 0f
+
+    private var goldTimer = 0f
 
     private var bonusVisible = false
     private var bonusX = 0f
@@ -166,6 +171,7 @@ class GameView @JvmOverloads constructor(
             }
 
             updateBonus(dt)
+            updateGold(dt)
             updateBugs(dt)
             reportStateIfNeeded(now)
 
@@ -183,6 +189,7 @@ class GameView @JvmOverloads constructor(
         misses = 0
 
         resetBonus()
+        goldTimer = 0f
 
         pausedRemainingMs = 0L
         roundEndAt =
@@ -285,7 +292,7 @@ class GameView @JvmOverloads constructor(
             }
 
             if (hitIndex >= 0) {
-                score += bugs[hitIndex].type.points
+                score += bugs[hitIndex].points
                 bugs.removeAt(hitIndex)
             } else {
                 score -= MISS_PENALTY
@@ -361,17 +368,13 @@ class GameView @JvmOverloads constructor(
         }
     }
 
-    private fun spawnBug() {
-        if (
-            width <= 0 ||
-            height <= 0 ||
-            bugs.size >= settings.maxBugs
-        ) {
+    private fun spawnBug(
+        type: BugType = randomType(),
+        points: Int = type.points
+    ) {
+        if (width <= 0 || height <= 0) {
             return
         }
-
-        val types = BugType.values()
-        val type = types[random.nextInt(types.size)]
 
         val radius = dp(type.sizeDp) / 2f
 
@@ -394,6 +397,7 @@ class GameView @JvmOverloads constructor(
 
         bugs += GameBug(
             type = type,
+            points = points,
             x = random.nextFloat() *
                     (maxX - minX) + minX,
             y = random.nextFloat() *
@@ -406,6 +410,27 @@ class GameView @JvmOverloads constructor(
 
         lastSpawnAt =
             SystemClock.elapsedRealtime()
+    }
+
+    private fun randomType(): BugType {
+        val types = BugType.values().filter { it != BugType.GOLD }
+
+        return types[random.nextInt(types.size)]
+    }
+
+    private fun updateGold(dt: Float) {
+        goldTimer += dt
+
+        if (goldTimer >= GOLD_INTERVAL_SECONDS) {
+            goldTimer = 0f
+            spawnBug(BugType.GOLD, goldPoints())
+        }
+    }
+
+    private fun goldPoints(): Int {
+        val rate = goldRate ?: return GOLD_DEFAULT_POINTS
+
+        return (rate / GOLD_RATE_DIVIDER).toInt().coerceAtLeast(1)
     }
 
     private fun updateBugs(dt: Float) {
@@ -605,7 +630,12 @@ class GameView @JvmOverloads constructor(
 
         when (bug.type) {
             BugType.COCKROACH ->
-                drawCockroach(canvas)
+                drawCockroach(
+                    canvas,
+                    Color.rgb(105, 67, 41),
+                    Color.rgb(70, 44, 28),
+                    Color.rgb(55, 35, 22)
+                )
 
             BugType.BEETLE ->
                 drawBeetle(canvas)
@@ -615,21 +645,33 @@ class GameView @JvmOverloads constructor(
 
             BugType.BUTTERFLY ->
                 drawButterfly(canvas)
+
+            BugType.GOLD ->
+                drawCockroach(
+                    canvas,
+                    Color.rgb(255, 200, 40),
+                    Color.rgb(212, 160, 20),
+                    Color.rgb(140, 100, 0)
+                )
         }
 
         canvas.restore()
     }
 
-    private fun drawCockroach(canvas: Canvas) {
-        fillPaint.color = Color.rgb(105, 67, 41)
+    private fun drawCockroach(
+        canvas: Canvas,
+        bodyColor: Int,
+        headColor: Int,
+        legColor: Int
+    ) {
+        fillPaint.color = bodyColor
 
         canvas.drawOval(
             RectF(-14f, -22f, 16f, 22f),
             fillPaint
         )
 
-        fillPaint.color =
-            Color.rgb(70, 44, 28)
+        fillPaint.color = headColor
 
         canvas.drawCircle(
             0f,
@@ -638,8 +680,7 @@ class GameView @JvmOverloads constructor(
             fillPaint
         )
 
-        strokePaint.color =
-            Color.rgb(55, 35, 22)
+        strokePaint.color = legColor
 
         for (side in listOf(-1f, 1f)) {
             canvas.drawLine(
@@ -949,5 +990,8 @@ class GameView @JvmOverloads constructor(
         private const val TILT_ACCEL_DP = 90f
         private const val TILT_FRICTION = 1.5f
         private const val TILT_BOUNCE = 0.3f
+        private const val GOLD_INTERVAL_SECONDS = 20f
+        private const val GOLD_RATE_DIVIDER = 1000
+        private const val GOLD_DEFAULT_POINTS = 10
     }
 }
