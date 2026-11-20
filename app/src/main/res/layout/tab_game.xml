@@ -46,7 +46,7 @@
         android:layout_marginBottom="8dp"
         android:layout_weight="1">
 
-        <com.example.gameofbugs.GameView
+        <com.example.gameofbugs.ui.GameView
             android:id="@+id/gameView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
